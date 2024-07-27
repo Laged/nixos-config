@@ -8,34 +8,34 @@
   };
 
   outputs =
-    inputs@{ nixpkgs, home-manager, ... }:
+    inputs@{
+      self,
+      nixpkgs,
+      home-manager,
+      ...
+    }:
     let
+      inherit (self) outputs;
       system = "x86_64-linux";
       lib = nixpkgs.lib;
       pkgs = nixpkgs.legacyPackages.${system};
-      devShell = import ./dev-shell.nix { inherit pkgs home-manager; };
     in
     {
       nixosConfigurations = lib.nixosSystem {
         dev = {
-          inherit system;
-          modules = [
-            ./configuration.nix
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobakPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.laged = import ./home.nix;
-            }
-          ];
+          specialArgs = {
+            inherit inputs outputs;
+          };
+          modules = [ ./configuration.nix ];
         };
       };
-
-      devShells.${system}.default = devShell;
 
       homeConfigurations = {
         laged = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
+          extraSpecialArgs = {
+            inherit inputs outputs;
+          };
           modules = [ ./home.nix ];
         };
       };
